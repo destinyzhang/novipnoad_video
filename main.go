@@ -306,10 +306,20 @@ func parsePage() *pageInfo {
 		page.multilinkInfos = append(page.multilinkInfos, multInfo)
 	})
 
+	findFunc := func(i int) string {
+		linkhead := articleBody.Find(fmt.Sprintf("p#linkhead%d", i))
+		return linkhead.First().Text()
+	}
 	//解析multilink
 	multilinks := articleBody.Find("div.tm-multilink")
 	multilinks.Each(func(i int, multilink *goquery.Selection) {
-		multInfo := page.multilinkInfos[i]
+		var multInfo *multilinkInfo
+		if i >= len(page.multilinkInfos) {
+			multInfo = &multilinkInfo{name: findFunc(i), playRss: make([]*playRs, 0, 5)}
+			page.multilinkInfos = append(page.multilinkInfos, multInfo)
+		} else {
+			multInfo = page.multilinkInfos[i]
+		}
 		multilink.Find("a").Each(func(j int, a *goquery.Selection) {
 			if onclick, exist := a.Attr("onclick"); exist {
 				rs := &playRs{name: a.Text()}
