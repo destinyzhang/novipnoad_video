@@ -360,17 +360,28 @@ func pickRs(rs *playRs, pkey string) {
 		fmt.Printf("pickVideoURL %s 失败\n", rs.name)
 		return
 	}
-	videoURL := rc4(body[strings.Index(body, `"`)+1 : strings.LastIndex(body, `"`)])
-	if videoURL == "" {
-		fmt.Printf("rc4 %s 失败\n", rs.name)
-		return
-	}
 	vjson := videoJSON{}
-	json.Unmarshal([]byte(videoURL), &vjson)
-	if vjson.Code != 200 {
-		fmt.Printf("vjson %s code %d 失败\n", rs.name, vjson.Code)
-		return
+	if strings.Contains(body, "JSON.decrypt") {
+		rc4Str := body[strings.Index(body, `"`)+1 : strings.LastIndex(body, `"`)]
+		videoURL := rc4(rc4Str)
+		if videoURL == "" {
+			fmt.Printf("rc4 %s %s 失败\n", rs.name, rc4Str)
+			return
+		}
+		json.Unmarshal([]byte(videoURL), &vjson)
+		if vjson.Code != 200 {
+			fmt.Printf("vjson %s code %d 失败 %v %s\n", rs.name, vjson.Code, vjson, videoURL)
+			return
+		}
+	} else {
+		rc4Str := body[strings.Index(body, `=`)+1 : strings.LastIndex(body, `;`)]
+		err := json.Unmarshal([]byte(rc4Str), &vjson)
+		if err != nil {
+			fmt.Printf("vjson %s code %d 失败 %v %s\n", rs.name, vjson.Code, vjson, rc4Str)
+			return
+		}
 	}
+
 	fmt.Printf("%s\n", rs.name)
 	for _, q := range vjson.QualityList {
 		fmt.Printf("%s\n", q.URL)
